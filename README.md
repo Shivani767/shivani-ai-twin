@@ -117,8 +117,8 @@ Do not commit `.env` files or API keys. This project includes `.gitignore` for t
 4. Build command: `pip install -r requirements.txt`.
 5. Start command: `uvicorn main:app --host 0.0.0.0 --port $PORT`.
 6. Add environment variables:
-   - `GEMINI_API_KEY` = your Google AI Studio key
-   - `GEMINI_MODEL` = `gemini-2.5-flash`
+   - `GROQ_API_KEY` = your Groq API key from https://console.groq.com/keys
+   - `GROQ_MODEL` = `llama-3.3-70b-versatile`
    - `ALLOWED_ORIGINS` = `https://YOUR-APP.vercel.app` (after frontend URL is known; temporarily use `*` only while testing)
 7. Deploy and open `https://YOUR-SERVICE.onrender.com/health`. Confirm `status` is `healthy` and `configured` is `true`.
 
@@ -153,14 +153,14 @@ This runs `vercel pull --yes`, builds, and deploys `vercel deploy --prod --yes`.
 
 ## Automated tests
 
-### Backend (FastAPI + Pydantic + Gemini mocking)
+### Backend (FastAPI + Pydantic + Groq mocking)
 
 ```bash
 cd backend
 python -m unittest -v
 ```
 
-Covers: health, profile, suggestions, empty/oversized message rejection, valid chat, missing API key (demo mode), Gemini error handling, conversation context preservation, reset, CORS, and secret leakage. Gemini calls are mocked, so no paid API requests are made during tests.
+Covers: health, profile, suggestions, empty/oversized message rejection, valid chat, missing API key (demo mode), Groq error handling, conversation context preservation, reset, CORS, and secret leakage. Groq calls are mocked, so no paid API requests are made during tests.
 
 ### Frontend (Vitest + Testing Library)
 
@@ -192,7 +192,7 @@ Covers: landing page rendering, suggested questions, text send + answer + speak,
 - Browser speech recognition support varies. Chrome/Edge generally provide the best support; Safari and Firefox support differs by version/device. Text input remains available.
 - Speech synthesis uses voices installed by the visitor's operating system/browser. This is not a voice clone of Shivani; it is a browser-generated voice reading her AI twin's answers.
 - The public profile intentionally excludes private information. The service does not store chat history in a database; context is sent only for the current request chain.
-- Gemini free-tier availability, quotas, and data handling are subject to Google's current terms. Review [Gemini API pricing and data-use terms](https://ai.google.dev/gemini-api/docs/pricing) before public submission.
+- Groq free-tier availability, quotas, and data handling are subject to Groq's current terms. Review [Groq pricing](https://console.groq.com/docs/rate-limits) before public submission.
 - The included in-memory rate limit is a basic guardrail, not a substitute for a production API gateway/WAF. For a heavily shared public link, add persistent rate limiting and monitoring.
 - Do not advertise this as a perfect clone or autonomous agent. It is a profile-grounded conversational voice interface.
 

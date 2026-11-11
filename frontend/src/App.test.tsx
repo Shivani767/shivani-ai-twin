@@ -35,7 +35,7 @@ function setup() {
     mockFetch = vi.fn(async (input: unknown) => {
       const url = typeof input === 'string' ? input : (input as Request).url
       if (url.includes('/health')) {
-        return { status: 200, ok: true, json: async () => ({ configured: true, model: 'gemini-2.5-flash' }) }
+        return { status: 200, ok: true, json: async () => ({ configured: true, model: 'llama-3.3-70b-versatile' }) }
       }
       if (url.includes('/api/suggestions')) {
         return { status: 200, ok: true, json: async () => ({ questions: ['Test question?'], count: 1 }) }
@@ -44,7 +44,7 @@ function setup() {
         return { status: 200, ok: true, json: async () => ({ conversation_id: 'reset-1', reset: true, ready: true }) }
       }
       if (url.includes('/api/chat')) {
-        return { status: 200, ok: true, json: async () => ({ reply: 'Mocked answer.', conversation_id: 'conv-1', mode: 'gemini' }) }
+        return { status: 200, ok: true, json: async () => ({ reply: 'Mocked answer.', conversation_id: 'conv-1', mode: 'groq' }) }
       }
       return { status: 200, ok: true, json: async () => ({}) }
     })
@@ -97,7 +97,7 @@ describe('App', () => {
     const mockFetch = vi.fn(async () => ({
       status: 200,
       ok: true,
-      json: async () => ({ reply: 'My superpower is ownership.', conversation_id: 'c1', mode: 'gemini' }),
+      json: async () => ({ reply: 'My superpower is ownership.', conversation_id: 'c1', mode: 'groq' }),
     }))
     vi.stubGlobal('fetch', mockFetch)
     vi.stubGlobal('speechSynthesis', synthesis)
@@ -123,7 +123,7 @@ describe('App', () => {
     const mockFetch = vi.fn(async () => ({
       status: 200,
       ok: true,
-      json: async () => ({ reply: 'OK.', conversation_id: 'c2', mode: 'gemini' }),
+      json: async () => ({ reply: 'OK.', conversation_id: 'c2', mode: 'groq' }),
     }))
     vi.stubGlobal('fetch', mockFetch)
     vi.stubGlobal('speechSynthesis', synthesis)

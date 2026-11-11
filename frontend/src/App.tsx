@@ -123,7 +123,7 @@ export default function App() {
       if (!answer) throw new Error('The AI returned an empty reply. Please try again.')
       setMessages((prev) => [...prev, { role: 'assistant', content: answer }])
       speak(answer)
-      if (data.mode === 'demo') setError('Demo mode: add your Gemini API key on the backend to enable live answers.')
+      if (data.mode === 'demo') setError('Demo mode: add your Groq API key on the backend to enable live answers.')
     } catch (e) {
       setError(e instanceof Error ? e.message : 'Unable to connect. Please try again.')
     } finally {
