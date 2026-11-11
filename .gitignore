@@ -11,3 +11,5 @@ dist/
 
 # TypeScript build cache
 *.tsbuildinfo
+.vercel
+.env*
