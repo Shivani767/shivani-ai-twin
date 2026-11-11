@@ -38,7 +38,7 @@ class TestHealth(unittest.TestCase):
 
     def test_health_default_model_is_llama_3_3_70b_versatile(self):
         r = self.client.get("/health")
-        self.assertEqual(r.json()["model"], "llama-3.3-70b-versatile")
+        self.assertEqual(r.json()["model"], "qwen/qwen3.8-27b")
 
 
 class TestProfile(unittest.TestCase):
