@@ -12,7 +12,7 @@ from pydantic import BaseModel, Field
 from persona import SYSTEM_PROMPT, PROFILE, SUGGESTIONS
 
 APP_NAME = "Shivani AI"
-MODEL = os.getenv("GROQ_MODEL", "llama-3.3-70b-versatile")
+MODEL = os.getenv("GROQ_MODEL", "qwen/qwen3.8-27b")
 
 app = FastAPI(title=APP_NAME, version="1.0.0", description="Personal AI voice twin assessment app")
 
