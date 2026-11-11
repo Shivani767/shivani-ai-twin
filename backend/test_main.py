@@ -17,13 +17,13 @@ class BaseTestCase(unittest.TestCase):
     def setUp(self):
         self.client = TestClient(app)
         main.CONVERSATIONS.clear()
-        # A unique key so real Gemini logic is not triggered.
-        main.os.environ["GEMINI_API_KEY"] = "test-key-not-for-production"
+        # A unique key so real Groq logic is not triggered.
+        main.os.environ["GROQ_API_KEY"] = "test-key-not-for-production"
 
     def tearDown(self):
         main.CONVERSATIONS.clear()
-        if "GEMINI_API_KEY" in main.os.environ:
-            del main.os.environ["GEMINI_API_KEY"]
+        if "GROQ_API_KEY" in main.os.environ:
+            del main.os.environ["GROQ_API_KEY"]
 
 
 class TestHealth(unittest.TestCase):
@@ -36,9 +36,9 @@ class TestHealth(unittest.TestCase):
         self.assertEqual(r.status_code, 200)
         self.assertEqual(r.json()["status"], "healthy")
 
-    def test_health_default_model_is_gemini_2_5_flash(self):
+    def test_health_default_model_is_llama_3_3_70b_versatile(self):
         r = self.client.get("/health")
-        self.assertEqual(r.json()["model"], "gemini-2.5-flash")
+        self.assertEqual(r.json()["model"], "llama-3.3-70b-versatile")
 
 
 class TestProfile(unittest.TestCase):
@@ -100,11 +100,11 @@ class TestChatEndpoints(BaseTestCase):
         finally:
             main.os.getenv = old_getenv
 
-    def test_chat_uses_mock_gemini(self):
+    def test_chat_uses_mock_groq(self):
         calls = []
 
-        def fake_generate(api_key, contents, model):
-            calls.append((api_key, contents, model))
+        def fake_generate(api_key, history, question, model):
+            calls.append((api_key, history, question, model))
             return "This is a mocked ground truth answer."
 
         main._sync_generate = fake_generate
@@ -115,7 +115,7 @@ class TestChatEndpoints(BaseTestCase):
             )
             self.assertEqual(r.status_code, 200)
             body = r.json()
-            self.assertEqual(body["mode"], "gemini")
+            self.assertEqual(body["mode"], "groq")
             self.assertEqual(body["conversation_id"], "conv-1")
             self.assertEqual(body["reply"], "This is a mocked ground truth answer.")
             self.assertEqual(len(calls), 1)
@@ -124,8 +124,8 @@ class TestChatEndpoints(BaseTestCase):
             main._sync_generate = _sync_generate
 
     def test_conversation_context_is_preserved(self):
-        def fake_generate(api_key, contents, model):
-            if "prior question" in contents:
+        def fake_generate(api_key, history, question, model):
+            if "prior question" in question:
                 return "Respond A (carries context)."
             return "Respond B (isolated)."
 
@@ -158,8 +158,8 @@ class TestChatEndpoints(BaseTestCase):
         self.assertTrue(r.json()["reset"])
         self.assertIsNone(get_conversation("conv-3"))
 
-    def test_gemini_error_returns_friendly_503(self):
-        main._sync_generate = lambda api_key, contents, model: (_ for _ in ()).throw(
+    def test_groq_error_returns_friendly_503(self):
+        main._sync_generate = lambda api_key, history, question, model: (_ for _ in ()).throw(
             RuntimeError("boom")
         )
         try:
@@ -174,14 +174,14 @@ class TestChatEndpoints(BaseTestCase):
             main._sync_generate = _sync_generate
 
     def test_secret_not_leaked_in_response(self):
-        main._sync_generate = lambda api_key, contents, model: "leak-free answer"
+        main._sync_generate = lambda api_key, history, question, model: "leak-free answer"
         try:
             r = self.client.post(
                 "/api/chat",
                 json={"message": "Hi", "conversation_id": "conv-5"},
             )
             body = r.json()
-            self.assertNotIn("GEMINI_API_KEY", str(body))
+            self.assertNotIn("GROQ_API_KEY", str(body))
             self.assertNotIn("test-key-not-for-production", str(body))
         finally:
             main._sync_generate = _sync_generate
@@ -192,7 +192,7 @@ class TestChatEndpoints(BaseTestCase):
         self.assertEqual(r.headers.get("access-control-allow-origin"), "*")
 
     def test_conversation_id_persists_context_after_reset(self):
-        def fake_generate(api_key, contents, model):
+        def fake_generate(api_key, history, question, model):
             return "ack"
 
         main._sync_generate = fake_generate

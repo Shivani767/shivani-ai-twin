@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # Deploy Shivani AI to Vercel + Render from a machine with the Vercel CLI installed.
-# The Gemini API key is NEVER stored in this file; it lives only as an environment
+# The Groq API key is NEVER stored in this file; it lives only as an environment
 # variable on the Render (backend) and Vercel (frontend) deployment settings.
 set -euo pipefail
 
@@ -19,7 +19,7 @@ vercel deploy --prod --yes
 echo
 echo "Frontend is live."
 echo "Set these environment variables on the Render (backend) deployment:"
-echo "  GEMINI_API_KEY = your Gemini API key"
-echo "  GEMINI_MODEL   = gemini-2.5-flash"
+echo "  GROQ_API_KEY = your Groq API key"
+echo "  GROQ_MODEL   = llama-3.3-70b-versatile"
 echo "  ALLOWED_ORIGINS= https://YOUR-FRONTEND.vercel.app"
 echo "Then redeploy the Render backend, then re-run: vercel deploy --prod --yes"

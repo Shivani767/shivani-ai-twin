@@ -1,6 +1,6 @@
 # Shivani AI — Personal AI Voice Twin
 
-A deployable voice-first web app for the 100x Stage 1 assessment. It answers in first person using a curated, factual professional profile. The frontend uses browser speech recognition and speech synthesis; the backend calls Gemini and keeps the API key server-side.
+A deployable voice-first web app for the 100x Stage 1 assessment. It answers in first person using a curated, factual professional profile. The frontend uses browser speech recognition and speech synthesis; the backend calls Groq and keeps the API key server-side.
 
 ## Features
 - Voice input (Web Speech API) with a text-chat fallback.
@@ -20,7 +20,7 @@ Browser (React/Vite)          FastAPI backend
 └─────────────┘                      │  • validates input │
                                      │  • manages memory  │
                                      │  • grounds in persona   │
-                                     │  • calls Gemini API  │
+                                     │  • calls Groq API   │
                                      │  • returns answer + conversation_id      │
                                      └──────────────────┘
                                      ▲
@@ -29,7 +29,7 @@ Browser (React/Vite)          FastAPI backend
                               Spoken answer
 ```
 
-- All Gemini interaction happens on the backend; the API key is never exposed to the browser.
+- All Groq interaction happens on the backend; the API key is never exposed to the browser.
 - Follow-up questions keep context server-side per `conversation_id`.
 - Reset conversation via `/api/chat/reset`.
 - Voice input (Web Speech API) and spoken output (speechSynthesis) run in the browser; text is always available as a fallback.
@@ -60,8 +60,8 @@ source .venv/bin/activate
 # Windows PowerShell: .venv\\Scripts\\Activate.ps1
 pip install -r requirements.txt
 cp .env.example .env
-# Add GEMINI_API_KEY to your shell environment (or use a local dotenv loader if you add one).
-export GEMINI_API_KEY="YOUR_KEY"
+# Add GROQ_API_KEY to your shell environment (or use a local dotenv loader if you add one).
+export GROQ_API_KEY="YOUR_KEY"
 uvicorn main:app --reload --port 8000
 ```
 
@@ -79,14 +79,18 @@ npm run dev
 
 Open the Vite URL shown in the terminal (usually http://localhost:5173). Microphone access requires localhost or HTTPS and browser permission.
 
-## Get a Gemini API key
+## Get a Groq API key
 
-1. Open [Google AI Studio API keys](https://aistudio.google.com/app/apikey).
-2. Create a key for your project.
-3. Add it as `GEMINI_API_KEY` in the backend host's environment-variable settings. Never put it in `frontend/.env`, source code, GitHub, or `VITE_*` variables.
-4. The Gemini Developer API has a free tier for eligible models and usage; limits and model availability can change. Check [current pricing and limits](https://ai.google.dev/gemini-api/docs/pricing).
+1. Open [Groq API Keys](https://console.groq.com/keys).
+2. Create a key for your account.
+3. Add it as `GROQ_API_KEY` in the backend host environment.
+4. Choose a model: `GROQ_MODEL=llama-3.3-70b-versatile` (default) or `llama-3.1-8b-instant`.
 
-Default model: `gemini-2.5-flash`. If unavailable to your account, set `GEMINI_MODEL` to a currently available model in AI Studio.
+Never put it in `frontend/.env`, source code, GitHub, or `VITE_*` variables.
+
+Groq's free developer tier supports conversational models such as `llama-3.3-70b-versatile` and `llama-3.1-8b-instant`. Rate limits and model availability are subject to Groq's current terms. Review [Groq pricing](https://console.groq.com/docs/rate-limits) before public submission.
+
+Default model: `llama-3.3-70b-versatile`. If unavailable to your account, set `GROQ_MODEL` to a currently available model in the Groq console.
 
 ## Deploy (recommended: Render + Vercel)
 
@@ -197,10 +201,10 @@ Covers: landing page rendering, suggested questions, text send + answer + speak,
 ```text
 shivani-ai-twin/
 ├── backend/
-│   ├── main.py              # FastAPI app + Gemini + conversation memory
+│   ├── main.py              # FastAPI app + Groq + conversation memory
 │   ├── persona.py           # Candidate knowledge base + system prompt
 │   ├── requirements.txt
-│   ├── test_main.py         # Backend unit tests (16 tests, mocked Gemini)
+│   ├── test_main.py         # Backend unit tests (16 tests, mocked Groq)
 │   ├── .env.example
 │   └── .venv/               # Python virtual environment (local)
 ├── frontend/
@@ -229,7 +233,7 @@ Before submitting, verify the following:
 - [ ] Microphone input works on a public/HTTPS URL.
 - [ ] Spoken responses play in the browser.
 - [ ] `npm run build` and `python -m unittest` both pass.
-- [ ] The Gemini API key is set only in the backend environment, never in code or `VITE_*`.
+- [ ] The Groq API key is set only in the backend environment, never in code or `VITE_*`.
 - [ ] Public URL, deployment health, and CORS are verified.
 
 ### Recruiter email
@@ -247,7 +251,7 @@ Before submitting, verify the following:
 >
 > **Assessment Demo:** [PUBLIC URL]
 >
-> **Technology Stack:** React, TypeScript, FastAPI, Gemini API and browser-based speech recognition and synthesis.
+> **Technology Stack:** React, TypeScript, FastAPI, Groq API and browser-based speech recognition and synthesis.
 >
 > I have attached my updated resume for your reference.
 >

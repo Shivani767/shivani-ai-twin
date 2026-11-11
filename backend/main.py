@@ -12,7 +12,7 @@ from pydantic import BaseModel, Field
 from persona import SYSTEM_PROMPT, PROFILE, SUGGESTIONS
 
 APP_NAME = "Shivani AI"
-MODEL = os.getenv("GEMINI_MODEL", "gemini-2.5-flash")
+MODEL = os.getenv("GROQ_MODEL", "llama-3.3-70b-versatile")
 
 app = FastAPI(title=APP_NAME, version="1.0.0", description="Personal AI voice twin assessment app")
 
@@ -48,7 +48,7 @@ class ChatResponse(BaseModel):
     reply: str
     conversation_id: str
     model: str
-    mode: Literal["gemini", "demo"]
+    mode: Literal["groq", "demo"]
 
 
 # ---------------------------------------------------------------------------
@@ -108,32 +108,34 @@ _Hits: dict[str, deque] = defaultdict(deque)
 
 
 # ---------------------------------------------------------------------------
-# Gemini client (isolated for timeouts and testability)
+# Groq client (isolated for timeouts and testability)
 # ---------------------------------------------------------------------------
-def _sync_generate(api_key: str, contents: str, model: str) -> str:
-    from google import genai
-    from google.genai import types
+def _sync_generate(api_key: str, history: list, question: str, model: str) -> str:
+    from groq import Groq
 
-    client = genai.Client(api_key=api_key)
-    response = client.models.generate_content(
+    client = Groq(api_key=api_key)
+
+    messages = [{"role": "system", "content": SYSTEM_PROMPT}]
+    for m in history:
+        messages.append({"role": m["role"], "content": m["content"]})
+    messages.append({"role": "user", "content": question})
+
+    response = client.chat.completions.create(
         model=model,
-        contents=contents,
-        config=types.GenerateContentConfig(
-            system_instruction=SYSTEM_PROMPT,
-            temperature=0.55,
-            top_p=0.9,
-            max_output_tokens=500,
-        ),
+        messages=messages,
+        temperature=0.55,
+        top_p=0.9,
+        max_completion_tokens=500,
     )
-    text = (response.text or "").strip()
+    text = (response.choices[0].message.content or "").strip()
     if not text:
         raise RuntimeError("The model returned an empty response")
     return text
 
 
-async def _call_gemini_with_key(api_key: str, contents: str, model: str) -> str:
+async def _call_groq_with_key(api_key: str, history: list, question: str, model: str) -> str:
     loop = asyncio.get_running_loop()
-    return await loop.run_in_executor(None, _sync_generate, api_key, contents, model)
+    return await loop.run_in_executor(None, _sync_generate, api_key, history, question, model)
 
 
 # ---------------------------------------------------------------------------
@@ -141,7 +143,7 @@ async def _call_gemini_with_key(api_key: str, contents: str, model: str) -> str:
 # ---------------------------------------------------------------------------
 @app.get("/health")
 def health():
-    configured = bool(os.getenv("GEMINI_API_KEY") or os.getenv("GOOGLE_API_KEY"))
+    configured = bool(os.getenv("GROQ_API_KEY"))
     return {"status": "healthy", "configured": configured, "model": MODEL}
 
 
@@ -162,14 +164,14 @@ async def chat(payload: ChatRequest, request: Request):
     if not question:
         raise HTTPException(status_code=422, detail="Please enter a question.")
 
-    api_key = os.getenv("GEMINI_API_KEY") or os.getenv("GOOGLE_API_KEY")
+    api_key = os.getenv("GROQ_API_KEY")
     if not api_key:
         conversation_id = payload.conversation_id or uuid.uuid4().hex
         return ChatResponse(
             reply=(
                 "I'm Shivani's AI voice twin, but the live AI service hasn't been "
                 "configured on this server yet, so I'm in demo mode. Please ask the "
-                "assessment owner to add your Gemini API key."
+                "assessment owner to add your Groq API key."
             ),
             conversation_id=conversation_id,
             model=MODEL,
@@ -181,17 +183,20 @@ async def chat(payload: ChatRequest, request: Request):
     if history is None:
         history = []
         CONVERSATIONS[conversation_id] = history
+
+    # Convert history to dicts for the Groq API
+    history_dicts = [{"role": m.role, "content": m.content} for m in history]
     history.append(Message(role="user", content=question))
 
     try:
         answer = await asyncio.wait_for(
-            _call_gemini_with_key(api_key, question, MODEL), timeout=30
+            _call_groq_with_key(api_key, history_dicts, question, MODEL), timeout=30
         )
     except asyncio.TimeoutError:
         raise HTTPException(status_code=504, detail="The AI took too long to answer. Please try again.")
     except Exception as exc:
         # Log details server-side only; never leak to the browser.
-        print(f"Gemini request failed: {type(exc).__name__}: {exc}")
+        print(f"Groq request failed: {type(exc).__name__}: {exc}")
         raise HTTPException(
             status_code=503,
             detail="I'm having trouble reaching my AI service right now. Please try again in a moment.",
@@ -199,7 +204,7 @@ async def chat(payload: ChatRequest, request: Request):
 
     history.append(Message(role="assistant", content=answer))
     save_conversation(conversation_id, history)
-    return ChatResponse(reply=answer, conversation_id=conversation_id, model=MODEL, mode="gemini")
+    return ChatResponse(reply=answer, conversation_id=conversation_id, model=MODEL, mode="groq")
 
 
 @app.post("/api/chat/reset")
